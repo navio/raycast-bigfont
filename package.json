@@ -17,8 +17,8 @@
     },
     {
       "name": "display-selected-text",
-      "title": "Copy Clear Display",
-      "description": "Internal display command for Copy Clear.",
+      "title": "Internal: Copy Clear Display",
+      "description": "Internal command used to render freshly captured selected text.",
       "mode": "view"
     }
   ],
