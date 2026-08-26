@@ -1,40 +1,30 @@
 import { getFrontmostApplication, getSelectedText, showToast, Toast } from "@raycast/api";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CharacterGrid } from "./character-grid";
 
 const RAYCAST_BUNDLE_ID = "com.raycast.macos";
-const FOCUS_POLL_INTERVAL_MS = 400;
+const FOCUS_POLL_INTERVAL_MS = 150;
 
 /**
- * Refreshes the text whenever Raycast regains focus. Clearing state while
- * Raycast is hidden makes a subsequent hotkey invocation read a new selection.
+ * Captures selected text before checking app focus. getSelectedText must run
+ * immediately when Raycast is invoked, while it still has the prior app's
+ * selection context.
  */
 export default function ShowSelectedText() {
   const [selectedText, setSelectedText] = useState<string>();
+  const latestSelectedText = useRef<string>();
 
   useEffect(() => {
     let disposed = false;
-    let raycastWasFocused = false;
+    let polling = false;
 
-    async function refreshOnFocus() {
+    async function captureSelection(showFailure: boolean) {
       try {
-        const frontmostApplication = await getFrontmostApplication();
-        const raycastIsFocused = frontmostApplication.bundleId === RAYCAST_BUNDLE_ID;
-
-        if (!raycastIsFocused) {
-          raycastWasFocused = false;
-          if (!disposed) setSelectedText(undefined);
-          return;
-        }
-
-        if (raycastWasFocused) return;
-        raycastWasFocused = true;
-
         const text = await getSelectedText();
-        if (!disposed) setSelectedText(text);
+        latestSelectedText.current = text;
+        return text;
       } catch (error) {
-        if (!disposed) {
-          setSelectedText("");
+        if (showFailure && !disposed) {
           await showToast({
             style: Toast.Style.Failure,
             title: "No selected text available",
@@ -42,11 +32,44 @@ export default function ShowSelectedText() {
           });
         }
         console.error(error);
+        return undefined;
       }
     }
 
-    void refreshOnFocus();
-    const timer = setInterval(() => void refreshOnFocus(), FOCUS_POLL_INTERVAL_MS);
+    async function pollFocus() {
+      if (polling) return;
+      polling = true;
+
+      // Do this first: asking macOS for the frontmost app before reading the
+      // selection can make the original selection unavailable.
+      const capturedText = await captureSelection(false);
+
+      try {
+        const frontmostApplication = await getFrontmostApplication();
+        const raycastIsFocused = frontmostApplication.bundleId === RAYCAST_BUNDLE_ID;
+
+        if (raycastIsFocused && !disposed) {
+          setSelectedText(capturedText ?? latestSelectedText.current);
+        } else if (!raycastIsFocused && !disposed) {
+          // Reset the displayed value while Raycast is hidden, but retain the
+          // latest external selection so the next hotkey press is immediate.
+          setSelectedText(undefined);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        polling = false;
+      }
+    }
+
+    // This initial read is deliberately synchronous in the command lifecycle.
+    // It is what handles the first invocation immediately.
+    void captureSelection(true).then((text) => {
+      if (!disposed && text !== undefined) setSelectedText(text);
+    });
+    void pollFocus();
+
+    const timer = setInterval(() => void pollFocus(), FOCUS_POLL_INTERVAL_MS);
     return () => {
       disposed = true;
       clearInterval(timer);
