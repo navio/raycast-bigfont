@@ -65,7 +65,8 @@ function gridMarkdown(text: string, preferences: Preferences): string {
     const color = characterColor(character, preferences.colorCode, darkMode);
     const kind = character === " " ? "SPACE" : character === "\n" ? "NEW LINE" : character === "\t" ? "TAB" : "";
 
-    if (index % 2 === 1) svg += `<rect x="${x}" y="${y}" width="${CELL_WIDTH}" height="${CELL_HEIGHT}" fill="${stripe}" />`;
+    if (index % 2 === 1)
+      svg += `<rect x="${x}" y="${y}" width="${CELL_WIDTH}" height="${CELL_HEIGHT}" fill="${stripe}" />`;
     svg += `<text x="${x + CELL_WIDTH / 2}" y="${y + 95}" text-anchor="middle" font-family="${fontFamily}" font-size="76" fill="${color}">${glyph}</text>`;
     svg += `<text x="${x + CELL_WIDTH / 2}" y="${y + 155}" text-anchor="middle" font-family="${fontFamily}" font-size="20" fill="${foreground}" opacity="0.58">${kind || label}</text>`;
   });

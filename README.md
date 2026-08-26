@@ -25,6 +25,6 @@ npm run dev
 
 Raycast will load the command in development mode. Use `npm run lint` before publishing.
 
-Before publishing under your own account, replace `author` in `package.json` with your Raycast username. The starter manifest retains the upstream **Large Type** extension author as attribution; the command grid was adapted from that MIT-licensed project.
+The character-grid concept was adapted from the MIT-licensed [Large Type](https://github.com/raycast/extensions/tree/main/extensions/large-type) Raycast extension.
 
 This project uses the Raycast `getSelectedText()` API, so the source application must expose its current selection to macOS accessibility services.
