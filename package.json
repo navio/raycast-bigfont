@@ -13,6 +13,12 @@
       "title": "Show Selected Text Clearly",
       "subtitle": "Large character grid",
       "description": "Show selected text from the frontmost app in a large, indexed character grid.",
+      "mode": "no-view"
+    },
+    {
+      "name": "display-selected-text",
+      "title": "Internal: Copy Clear Display",
+      "description": "Internal command used to render freshly captured selected text.",
       "mode": "view"
     }
   ],
