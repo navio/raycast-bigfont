@@ -1,23 +1,57 @@
-import { getSelectedText, launchCommand, LaunchType, showToast, Toast } from "@raycast/api";
+import { getFrontmostApplication, getSelectedText, showToast, Toast } from "@raycast/api";
+import { useEffect, useState } from "react";
+import { CharacterGrid } from "./character-grid";
+
+const RAYCAST_BUNDLE_ID = "com.raycast.macos";
+const FOCUS_POLL_INTERVAL_MS = 400;
 
 /**
- * This no-view command is intentionally the hotkey target. It runs on every
- * invocation, captures a fresh selection, then opens/replaces the display view.
+ * Refreshes the text whenever Raycast regains focus. Clearing state while
+ * Raycast is hidden makes a subsequent hotkey invocation read a new selection.
  */
-export default async function ShowSelectedText() {
-  try {
-    const text = await getSelectedText();
-    await launchCommand({
-      name: "display-selected-text",
-      type: LaunchType.UserInitiated,
-      context: { text },
-    });
-  } catch (error) {
-    await showToast({
-      style: Toast.Style.Failure,
-      title: "No selected text available",
-      message: "Select text in another app, then invoke Copy Clear.",
-    });
-    console.error(error);
-  }
+export default function ShowSelectedText() {
+  const [selectedText, setSelectedText] = useState<string>();
+
+  useEffect(() => {
+    let disposed = false;
+    let raycastWasFocused = false;
+
+    async function refreshOnFocus() {
+      try {
+        const frontmostApplication = await getFrontmostApplication();
+        const raycastIsFocused = frontmostApplication.bundleId === RAYCAST_BUNDLE_ID;
+
+        if (!raycastIsFocused) {
+          raycastWasFocused = false;
+          if (!disposed) setSelectedText(undefined);
+          return;
+        }
+
+        if (raycastWasFocused) return;
+        raycastWasFocused = true;
+
+        const text = await getSelectedText();
+        if (!disposed) setSelectedText(text);
+      } catch (error) {
+        if (!disposed) {
+          setSelectedText("");
+          await showToast({
+            style: Toast.Style.Failure,
+            title: "No selected text available",
+            message: "Select text in another app, then invoke Copy Clear.",
+          });
+        }
+        console.error(error);
+      }
+    }
+
+    void refreshOnFocus();
+    const timer = setInterval(() => void refreshOnFocus(), FOCUS_POLL_INTERVAL_MS);
+    return () => {
+      disposed = true;
+      clearInterval(timer);
+    };
+  }, []);
+
+  return <CharacterGrid text={selectedText} />;
 }
