@@ -3,12 +3,12 @@ import { useEffect, useRef, useState } from "react";
 import { CharacterGrid } from "./character-grid";
 
 const RAYCAST_BUNDLE_ID = "com.raycast.macos";
-const FOCUS_POLL_INTERVAL_MS = 150;
+const FOCUS_POLL_INTERVAL_MS = 200;
 
 /**
- * Captures selected text before checking app focus. getSelectedText must run
- * immediately when Raycast is invoked, while it still has the prior app's
- * selection context.
+ * Reads the selection immediately on launch, then caches selections only while
+ * another application is frontmost. Calling getSelectedText while Raycast is
+ * focused fails and must not be polled.
  */
 export default function ShowSelectedText() {
   const [selectedText, setSelectedText] = useState<string>();
@@ -30,8 +30,8 @@ export default function ShowSelectedText() {
             title: "No selected text available",
             message: "Select text in another app, then invoke Copy Clear.",
           });
+          console.error(error);
         }
-        console.error(error);
         return undefined;
       }
     }
@@ -40,21 +40,19 @@ export default function ShowSelectedText() {
       if (polling) return;
       polling = true;
 
-      // Do this first: asking macOS for the frontmost app before reading the
-      // selection can make the original selection unavailable.
-      const capturedText = await captureSelection(false);
-
       try {
         const frontmostApplication = await getFrontmostApplication();
         const raycastIsFocused = frontmostApplication.bundleId === RAYCAST_BUNDLE_ID;
 
-        if (raycastIsFocused && !disposed) {
-          setSelectedText(capturedText ?? latestSelectedText.current);
-        } else if (!raycastIsFocused && !disposed) {
-          // Reset the displayed value while Raycast is hidden, but retain the
-          // latest external selection so the next hotkey press is immediate.
-          setSelectedText(undefined);
+        if (raycastIsFocused) {
+          if (!disposed) setSelectedText(latestSelectedText.current);
+          return;
         }
+
+        // The source app is focused, so it is safe to cache its selection for
+        // the next time the Copy Clear hotkey brings Raycast forward.
+        await captureSelection(false);
+        if (!disposed) setSelectedText(undefined);
       } catch (error) {
         console.error(error);
       } finally {
@@ -62,8 +60,8 @@ export default function ShowSelectedText() {
       }
     }
 
-    // This initial read is deliberately synchronous in the command lifecycle.
-    // It is what handles the first invocation immediately.
+    // The first invocation has no cached value, so read it immediately before
+    // Raycast finishes becoming the frontmost application.
     void captureSelection(true).then((text) => {
       if (!disposed && text !== undefined) setSelectedText(text);
     });
