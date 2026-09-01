@@ -16,7 +16,7 @@ export default async function ShowSelectedText() {
     await showToast({
       style: Toast.Style.Failure,
       title: "No selected text available",
-      message: "Select text in another app, then invoke Copy Clear.",
+      message: "Select text in another app, then invoke Large Font.",
     });
     console.error(error);
   }

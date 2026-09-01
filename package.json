@@ -1,7 +1,7 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
-  "name": "copy-clear",
-  "title": "Copy Clear",
+  "name": "large-font",
+  "title": "Large Font",
   "description": "Display selected text as a large, easy-to-read character grid.",
   "icon": "command-icon.png",
   "author": "navio",
@@ -17,8 +17,8 @@
     },
     {
       "name": "display-selected-text",
-      "title": "Internal: Copy Clear Display",
-      "description": "Internal command used to render freshly captured selected text.",
+      "title": "Internal: Large Font Display",
+      "description": "Internal command used to render freshly captured selected text. Do not run directly.",
       "mode": "view"
     }
   ],

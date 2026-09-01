@@ -1,4 +1,4 @@
-# Copy Clear
+# Large Font
 
 A Raycast extension for reading copy-sensitive text without confusing similar characters.
 
@@ -13,7 +13,7 @@ Select text in any frontmost macOS application, invoke **Show Selected Text Clea
 ## Use
 
 1. Select a password, verification code, serial number, URL, or other text.
-2. Open Raycast and run **Copy Clear: Show Selected Text Clearly**.
+2. Open Raycast and run **Large Font: Show Selected Text Clearly**.
 3. Assign a Raycast hotkey to the command for immediate access.
 
 ## Development
